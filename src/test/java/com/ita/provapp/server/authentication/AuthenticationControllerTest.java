@@ -1,6 +1,7 @@
 package com.ita.provapp.server.authentication;
 
 import com.ita.provapp.server.DateDeserializer;
+import com.ita.provapp.server.provappcommon.exceptions.AuthTokenIncorrectException;
 import com.ita.provapp.server.provappcommon.exceptions.EntityExistsException;
 import com.ita.provapp.server.provappcommon.exceptions.EntityNotFoundException;
 import com.ita.provapp.server.provappcommon.exceptions.PasswordIncorrectException;
@@ -225,6 +226,75 @@ public class AuthenticationControllerTest {
                 delete("/users/authtokens")
                         .header("Authorization", authtoken))
                 .andExpect(status().isNoContent()).andReturn();
+    }
+
+    @Test
+    public void testGetUser() throws EntityNotFoundException, AuthTokenIncorrectException, Exception {
+        String username = "user123";
+        String authtoken = "123qwe";
+
+        when(accountsService.getUserByToken(username,authtoken)).thenReturn(user);
+
+        mockMvc.perform(
+                get(String.format("/users/%s",username))
+                        .accept(MediaType.APPLICATION_JSON_VALUE)
+                        .header("Authorization", authtoken))
+                .andExpect(content().json(gson.toJson(user)))
+                .andExpect(content().contentType(MediaType.APPLICATION_JSON_UTF8))
+                .andExpect(status().isOk()).andReturn();
+    }
+
+    @Test
+    public void testGetUserMissingAuthToken() throws EntityNotFoundException, AuthTokenIncorrectException, Exception {
+        String username = "user123";
+        String authtoken = "123qwe";
+        ErrorMessage errorMessage = new ErrorMessage("Incorrect email address", 401);
+
+        when(accountsService.getUserByToken(username,authtoken)).thenReturn(user);
+
+        mockMvc.perform(
+                get(String.format("/users/%s",username))
+                        .accept(MediaType.APPLICATION_JSON_VALUE))
+                .andExpect(jsonPath("$.errors", org.hamcrest.Matchers.is(errorMessage.getErrors())))
+                .andExpect(jsonPath("$.status", org.hamcrest.Matchers.is(errorMessage.getStatus())))
+                .andExpect(content().contentType(MediaType.APPLICATION_JSON_UTF8))
+                .andExpect(status().isUnauthorized()).andReturn();
+    }
+
+    @Test
+    public void testGetUserIncorrectAuthToken() throws EntityNotFoundException, AuthTokenIncorrectException, Exception {
+        String username = "user123";
+        String authtoken = "123qwe";
+        ErrorMessage errorMessage = new ErrorMessage("Unauthorized access. Authorization token is incorrect.", 401);
+
+        when(accountsService.getUserByToken(username,authtoken)).thenThrow(new AuthTokenIncorrectException());
+
+        mockMvc.perform(
+                get(String.format("/users/%s",username))
+                        .accept(MediaType.APPLICATION_JSON_VALUE)
+                        .header("Authorization", authtoken))
+                .andExpect(jsonPath("$.errors", org.hamcrest.Matchers.is(errorMessage.getErrors())))
+                .andExpect(jsonPath("$.status", org.hamcrest.Matchers.is(errorMessage.getStatus())))
+                .andExpect(content().contentType(MediaType.APPLICATION_JSON_UTF8))
+                .andExpect(status().isUnauthorized()).andReturn();
+    }
+
+    @Test
+    public void testGetNoExistsUser() throws EntityNotFoundException, AuthTokenIncorrectException, Exception {
+        String username = "user123";
+        String authtoken = "123qwe";
+        ErrorMessage errorMessage = new ErrorMessage("User: " + username + " not exists.", 404);
+
+        when(accountsService.getUserByToken(username,authtoken)).thenThrow(new EntityNotFoundException("User: " + username + " not exists."));
+
+        mockMvc.perform(
+                get(String.format("/users/%s",username))
+                        .accept(MediaType.APPLICATION_JSON_VALUE)
+                        .header("Authorization", authtoken))
+                .andExpect(jsonPath("$.errors", org.hamcrest.Matchers.is(errorMessage.getErrors())))
+                .andExpect(jsonPath("$.status", org.hamcrest.Matchers.is(errorMessage.getStatus())))
+                .andExpect(content().contentType(MediaType.APPLICATION_JSON_UTF8))
+                .andExpect(status().isNotFound()).andReturn();
     }
 }
 

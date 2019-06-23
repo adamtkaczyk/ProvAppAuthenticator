@@ -38,6 +38,6 @@ public class AuthenticationExceptionHandler extends com.ita.provapp.server.prova
     @ResponseStatus(HttpStatus.UNAUTHORIZED)
     @ResponseBody
     protected ErrorMessage handlerAuthTokenIncorrectException(AuthTokenIncorrectException ex) {
-        return new ErrorMessage(ex.getMessage());
+        return new ErrorMessage(ex.getMessage(), 401);
     }
 }

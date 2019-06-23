@@ -24,7 +24,7 @@ public class AuthenticationController {
 
     Logger logger = LoggerFactory.getLogger(AuthenticationController.class);
 
-    @RequestMapping(value = "/authtokens", method = RequestMethod.POST, produces = "application/json")
+    @PostMapping(value = "/authtokens", produces = "application/json")
     @ResponseStatus(HttpStatus.CREATED)
     @ResponseBody
     public ResponseEntity<LoginUser> authentication(@Valid @RequestBody Credential credential) throws EntityNotFoundException, PasswordIncorrectException {
@@ -56,7 +56,8 @@ public class AuthenticationController {
         return new ResponseEntity<>(headers, HttpStatus.CREATED);
     }
 
-    @RequestMapping(value = "/{username}", method = RequestMethod.GET, produces = "application/json")
+
+    @GetMapping(value = "/{username}", produces = "application/json")
     @ResponseStatus(HttpStatus.OK)
     @ResponseBody
     public User getUser(@PathVariable String username, @RequestHeader("Authorization") String authToken) throws AuthTokenIncorrectException, EntityNotFoundException {
